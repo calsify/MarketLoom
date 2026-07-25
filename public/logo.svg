@@ -1,0 +1,37 @@
+<svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+    <linearGradient id="quant" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#34d399"/>
+    </linearGradient>
+    <linearGradient id="news" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0ea5e9"/>
+      <stop offset="100%" stop-color="#7dd3fc"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="4" y="4" width="232" height="232" rx="52" fill="url(#bg)"/>
+  <rect x="4" y="4" width="232" height="232" rx="52" fill="none" stroke="#1e293b" stroke-width="1.5"/>
+
+  <!-- artwork scaled 1.5x and re-centered on the 240x240 canvas to cut down on padding -->
+  <g transform="translate(120,120) scale(1.5) translate(-118.5,-106.5)">
+    <!-- NEWS thread (sky) — smooth, flowing, under at both crossings -->
+    <path d="M 52 96 C 82 96, 88 148, 118 148 C 148 148, 154 92, 184 92"
+          fill="none" stroke="url(#news)" stroke-width="11" stroke-linecap="round"/>
+
+    <!-- QUANT thread (emerald) — stepped like a candlestick/price series, drawn in three segments so the news thread shows through at the two crossings -->
+    <path d="M 52 150 L 74 150 L 74 128 L 96 128"
+          fill="none" stroke="url(#quant)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 100 116 L 118 116 L 118 96 L 140 96"
+          fill="none" stroke="url(#quant)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 144 84 L 162 84 L 162 64 L 184 64"
+          fill="none" stroke="url(#quant)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- convergence point: rising tick mark, the two threads read into one signal -->
+    <circle cx="184" cy="64" r="6.5" fill="#34d399"/>
+  </g>
+</svg>

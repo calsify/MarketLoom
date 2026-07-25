@@ -1,7 +1,11 @@
 async function resolveTickerSymbol(query: string): Promise<string> {
   const cleaned = query.trim();
-  
-  if (cleaned.toUpperCase() === 'NIFTY' || cleaned.toUpperCase() === 'NIFTY 50' || cleaned === '^NSEI') {
+
+  if (
+    cleaned.toUpperCase() === 'NIFTY' ||
+    cleaned.toUpperCase() === 'NIFTY 50' ||
+    cleaned === '^NSEI'
+  ) {
     return '^NSEI';
   }
 
@@ -12,7 +16,10 @@ async function resolveTickerSymbol(query: string): Promise<string> {
   try {
     const searchRes = await fetch(
       `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(cleaned)}&quotesCount=5&newsCount=0`,
-      { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }, cache: 'no-store' }
+      {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+        cache: 'no-store',
+      }
     );
 
     if (searchRes.ok) {
@@ -37,15 +44,25 @@ export async function fetchStockData(rawInput: string) {
   const symbol = await resolveTickerSymbol(rawInput);
 
   try {
+    // Explicitly compute Unix timestamps in seconds for a reliable 90-day window
+    const nowSec = Math.floor(Date.now() / 1000);
+    const ninetyDaysAgoSec = nowSec - 90 * 24 * 60 * 60;
+
     const [stockRes, niftyRes] = await Promise.all([
-      fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=3m&interval=1d&includePrePost=false`, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
-        cache: 'no-store'
-      }),
-      fetch(`https://query1.finance.yahoo.com/v8/finance/chart/%5ENSEI?range=1d&interval=1d`, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
-        cache: 'no-store'
-      })
+      fetch(
+        `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?period1=${ninetyDaysAgoSec}&period2=${nowSec}&interval=1d&includePrePost=false`,
+        {
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+          cache: 'no-store',
+        }
+      ),
+      fetch(
+        `https://query1.finance.yahoo.com/v8/finance/chart/%5ENSEI?period1=${nowSec - 86400}&period2=${nowSec}&interval=1d`,
+        {
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+          cache: 'no-store',
+        }
+      ),
     ]);
 
     if (!stockRes.ok) throw new Error(`Could not find market data for "${rawInput}"`);
@@ -55,7 +72,7 @@ export async function fetchStockData(rawInput: string) {
 
     if (!result) throw new Error(`Invalid market data returned for ${symbol}`);
 
-    const meta = result.meta;
+    const meta = result.meta || {};
     const timestamps = result.timestamp || [];
     const quote = result.indicators?.quote?.[0] || {};
     const closes = quote.close || [];
@@ -64,26 +81,46 @@ export async function fetchStockData(rawInput: string) {
     const lows = quote.low || [];
     const volumes = quote.volume || [];
 
-    const history: Array<{ date: string; open: number; high: number; low: number; close: number; volume: number }> = [];
+    const history: Array<{
+      date: string;
+      open: number;
+      high: number;
+      low: number;
+      close: number;
+      volume: number;
+    }> = [];
 
     for (let i = 0; i < timestamps.length; i++) {
       const c = closes[i];
-      if (typeof c === 'number' && !isNaN(c) && isFinite(c) && c > 0) {
-        const dateObj = new Date(timestamps[i] * 1000);
+      const t = timestamps[i];
+
+      // Clean invalid or null data points without corrupting the historical array
+      if (t && typeof c === 'number' && !isNaN(c) && isFinite(c) && c > 0) {
+        const dateObj = new Date(t * 1000);
         const dateStr = `${dateObj.getDate()} ${dateObj.toLocaleString('en-IN', { month: 'short' })}`;
+
+        const openVal = typeof opens[i] === 'number' && !isNaN(opens[i]) ? opens[i] : c;
+        const highVal = typeof highs[i] === 'number' && !isNaN(highs[i]) ? highs[i] : c;
+        const lowVal = typeof lows[i] === 'number' && !isNaN(lows[i]) ? lows[i] : c;
+        const volVal = typeof volumes[i] === 'number' && !isNaN(volumes[i]) ? volumes[i] : 0;
 
         history.push({
           date: dateStr,
-          open: Number((opens[i] || c).toFixed(2)),
-          high: Number((highs[i] || c).toFixed(2)),
-          low: Number((lows[i] || c).toFixed(2)),
+          open: Number(openVal.toFixed(2)),
+          high: Number(highVal.toFixed(2)),
+          low: Number(lowVal.toFixed(2)),
           close: Number(c.toFixed(2)),
-          volume: Number(volumes[i] || 0),
+          volume: Number(volVal),
         });
       }
     }
 
-    const price = Number((meta.regularMarketPrice || (history.length > 0 ? history[history.length - 1].close : 0)).toFixed(2));
+    const price = Number(
+      (
+        meta.regularMarketPrice ||
+        (history.length > 0 ? history[history.length - 1].close : 0)
+      ).toFixed(2)
+    );
     const prevClose = Number((meta.chartPreviousClose || meta.previousClose || price).toFixed(2));
     const changePercent = Number((((price - prevClose) / prevClose) * 100).toFixed(2));
 
@@ -91,9 +128,13 @@ export async function fetchStockData(rawInput: string) {
     if (niftyRes.ok) {
       const niftyData = await niftyRes.json();
       const niftyMeta = niftyData.chart?.result?.[0]?.meta;
-      if (niftyMeta) {
+      if (niftyMeta && niftyMeta.chartPreviousClose) {
         niftyChangePercent = Number(
-          (((niftyMeta.regularMarketPrice - niftyMeta.chartPreviousClose) / niftyMeta.chartPreviousClose) * 100).toFixed(2)
+          (
+            ((niftyMeta.regularMarketPrice - niftyMeta.chartPreviousClose) /
+              niftyMeta.chartPreviousClose) *
+            100
+          ).toFixed(2)
         );
       }
     }
@@ -102,7 +143,7 @@ export async function fetchStockData(rawInput: string) {
 
     return {
       ticker: symbol,
-      displayTicker: symbol.replace('.NS', '').replace('^', ''),
+      displayTicker: symbol.replace('.NS', '').replace('.BO', '').replace('^', ''),
       companyName: meta.shortName || meta.longName || meta.symbol,
       price,
       currency: meta.currency || 'INR',
@@ -112,7 +153,7 @@ export async function fetchStockData(rawInput: string) {
       exchange: meta.exchangeName || 'NSE',
       niftyChangePercent,
       relativeToNifty,
-      history,
+      history, // Returns the full 90-day history array
     };
   } catch (error: any) {
     console.error('Error in fetchStockData:', error);
