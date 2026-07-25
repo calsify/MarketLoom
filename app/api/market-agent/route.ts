@@ -1,91 +1,89 @@
-import { NextResponse } from 'next/server';
-import { generateObject } from 'ai';
 import { google } from '@ai-sdk/google';
+import { generateObject } from 'ai';
 import { z } from 'zod';
 import { fetchStockData } from '@/lib/tools/finance-tool';
 import { fetchCompanyNews } from '@/lib/tools/news-tool';
 
-// --- Validation schemas -----------------------------------------------
-
-const requestSchema = z.object({
-  ticker: z
-    .string()
-    .trim()
-    .min(1, 'Ticker is required')
-    .max(10, 'Ticker looks too long')
-    .transform((v) => v.toUpperCase()),
-});
-
-const analysisSchema = z.object({
-  bullCase: z.array(z.string()).min(1),
-  bearCase: z.array(z.string()).min(1),
-  riskRating: z.enum(['Low', 'Medium', 'High']),
-  summary: z.string(),
-});
-
-// --- Route handler -------------------------------------------------------
+// Server-side cache to prevent duplicate API token spend
+const cache = new Map<string, { timestamp: number; data: any }>();
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes cache TTL
 
 export async function POST(req: Request) {
-  // Step 0: Validate input
-  let ticker: string;
   try {
-    const body = await req.json();
-    const parsed = requestSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'A valid ticker symbol is required (1-10 characters).' },
-        { status: 400 }
-      );
+    const { ticker } = await req.json();
+
+    if (!ticker || typeof ticker !== 'string') {
+      return new Response(JSON.stringify({ error: 'Ticker is required' }), { status: 400 });
     }
-    ticker = parsed.data.ticker;
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 });
-  }
 
-  // Step 1: Run both sub-agent tools in parallel.
-  // allSettled (not all) so one tool failing doesn't kill the whole request.
-  // finance-tool.ts / news-tool.ts already return mock fallbacks internally,
-  // but this guards against an unexpected throw too.
-  const [financialsResult, newsResult] = await Promise.allSettled([
-    fetchStockData(ticker),
-    fetchCompanyNews(ticker),
-  ]);
+    const cacheKey = ticker.trim().toLowerCase();
+    const cachedEntry = cache.get(cacheKey);
 
-  if (financialsResult.status === 'rejected') {
-    console.error('[market-agent] finance tool failed:', financialsResult.reason);
-    return NextResponse.json(
-      { error: 'Could not retrieve financial data for this ticker.' },
-      { status: 502 }
-    );
-  }
+    // Return cached result immediately if under 10 minutes old (0 tokens used!)
+    if (cachedEntry && Date.now() - cachedEntry.timestamp < CACHE_TTL) {
+      return Response.json(cachedEntry.data);
+    }
 
-  const financials = financialsResult.value;
-  const news = newsResult.status === 'fulfilled' ? newsResult.value : [];
+    // Parallel execution for minimum latency
+    const [financials, news] = await Promise.all([
+      fetchStockData(ticker),
+      fetchCompanyNews(`${ticker} NSE stock news India`),
+    ]);
 
-  // Step 2: Master synthesis agent combines quantitative + qualitative data.
-  // generateObject + a zod schema (vs generateText + manual JSON.parse) means
-  // the SDK enforces the output shape — no stripping ```json fences and
-  // hoping the model returned valid, correctly-keyed JSON.
-  try {
-    const { object: analysis } = await generateObject({
+    // Token Optimization: Send concise headlines
+    const conciseNewsStr = news
+      .slice(0, 3)
+      .map((n) => `- ${n.title}: ${n.snippet.slice(0, 100)}`)
+      .join('\n');
+
+    // Prompt instruct Gemini to provide brief bullet points
+    const prompt = `
+      Equity: ${financials.companyName} (${financials.ticker})
+      Price: ₹${financials.price} (${financials.changePercent}% 24h) | NIFTY 24h: ${financials.niftyChangePercent}% | Alpha: ${financials.relativeToNifty}%
+      52W High/Low: ₹${financials.fiftyTwoWeekHigh} / ₹${financials.fiftyTwoWeekLow}
+      News:
+      ${conciseNewsStr}
+
+      Task: Provide a concise market evaluation including sentiment breakdown (bullish/bearish/neutral percentages summing to 100%), key sector peers, risk level, SEBI caution flags, and 3 brief bull/bear points. Keep sentences short.
+    `;
+
+    const { object } = await generateObject({
       model: google('gemini-3.5-flash'),
-      schema: analysisSchema,
-      system: `You are a Senior Wall Street Market Analyst and Competitor Intelligence Agent.
-Synthesize the quantitative financial numbers and qualitative news snippets into a
-concise, well-reasoned report. Base every claim on the data provided — do not invent
-figures or events that aren't supported by the inputs.`,
-      prompt: `
-        TICKER: ${ticker}
-        FINANCIAL DATA: ${JSON.stringify(financials)}
-        NEWS HEADLINES: ${JSON.stringify(news)}
-      `,
+      schema: z.object({
+        sentiment: z.object({
+          bullishPercent: z.number().min(0).max(100),
+          bearishPercent: z.number().min(0).max(100),
+          neutralPercent: z.number().min(0).max(100),
+          overallSentiment: z.string().describe('e.g., Strongly Bullish, Mildly Bullish, Neutral, Bearish'),
+        }),
+        peerAnalysis: z.object({
+          sector: z.string(),
+          keyPeers: z.array(z.string()),
+          sectorPerformanceSummary: z.string(),
+        }),
+        bullCase: z.array(z.string()).describe('List of 3 growth catalysts'),
+        bearCase: z.array(z.string()).describe('List of 3 downside risks'),
+        riskRating: z.enum(['Low', 'Medium', 'High']),
+        sebiCautionFlag: z.string(),
+        summary: z.string(),
+      }),
+      prompt,
     });
 
-    return NextResponse.json({ financials, news, analysis });
-  } catch (error) {
-    console.error('[market-agent] synthesis failed:', error);
-    return NextResponse.json(
-      { error: 'Failed to synthesize market analysis. Please try again.' },
+    const responsePayload = {
+      financials,
+      news,
+      analysis: object,
+    };
+
+    // Store in cache
+    cache.set(cacheKey, { timestamp: Date.now(), data: responsePayload });
+
+    return Response.json(responsePayload);
+  } catch (error: any) {
+    console.error('Error in agent route:', error);
+    return new Response(
+      JSON.stringify({ error: error.message || 'Failed to process market analysis' }),
       { status: 500 }
     );
   }
