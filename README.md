@@ -30,11 +30,6 @@ an LLM synthesize both into a single, structured Bull vs. Bear market briefing i
 [Features](#features) ·
 [How It Works](#how-it-works) ·
 [Architecture](#architecture) ·
-[Tech Stack](#tech-stack) ·
-[Getting Started](#getting-started) ·
-[Project Structure](#project-structure) ·
-[Usage](#usage) ·
-[Roadmap](#roadmap) ·
 [Team](#team) ·
 
 </div>
