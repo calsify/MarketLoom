@@ -3,11 +3,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import { 
   ShieldAlert, TrendingUp, TrendingDown, Newspaper, DollarSign, 
-  Activity, Users, Award, BarChart2, CheckCircle2, AlertTriangle
+  Activity, Users, Award, BarChart2, CheckCircle2, AlertTriangle,
+  Download, Loader2
 } from 'lucide-react';
 import { 
   ResponsiveContainer, Area, XAxis, YAxis, Tooltip, Bar, ComposedChart, Cell
 } from 'recharts';
+import html2canvas from 'html2canvas-pro';
+import jsPDF from 'jspdf';
 
 interface HistoryPoint {
   date: string;
@@ -133,10 +136,41 @@ export default function MarketDashboard({ data }: MarketDashboardProps) {
 
   const [timeframe, setTimeframe] = useState<'30D' | '60D' | '90D'>('90D');
   const [mounted, setMounted] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const handleExportPDF = async () => {
+    const dashboardElement = document.getElementById('market-dashboard-report');
+    if (!dashboardElement) return;
+
+    try {
+      setIsExporting(true);
+
+      const canvas = await html2canvas(dashboardElement, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#020617',
+        logging: false,
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: [canvas.width, canvas.height],
+      });
+
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+      pdf.save(`${financials?.displayTicker || financials?.ticker || 'MarketLoom'}_Report.pdf`);
+    } catch (err) {
+      console.error('PDF generation error:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const sanitizedHistory = useMemo(
     () => sanitizeHistory(financials?.history),
@@ -158,7 +192,7 @@ export default function MarketDashboard({ data }: MarketDashboardProps) {
   // Compute maximum volume for Y-Axis scaling so bars take up lower 25% of chart
   const maxVolume = useMemo(() => {
     const vols = filteredData.map((d) => d.volume || 0);
-    return Math.max(...vols, 1) * 3.5; // Multiplied to keep bars short at the bottom
+    return Math.max(...vols, 1) * 3.5;
   }, [filteredData]);
 
   const isPositiveTrend = financials?.changePercent >= 0;
@@ -171,7 +205,40 @@ export default function MarketDashboard({ data }: MarketDashboardProps) {
   };
 
   return (
-    <div className="space-y-6 w-full">
+    <div id="market-dashboard-report" className="space-y-6 w-full p-2 sm:p-4 bg-slate-950 rounded-2xl">
+      {/* 0. Top Bar Action Header with PDF Export */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-800/80 pb-4">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-100 flex items-center gap-2">
+            <span>{financials?.companyName}</span>
+            <span className="text-xs px-2 py-0.5 bg-slate-800 text-slate-400 rounded border border-slate-700 font-mono">
+              {financials?.displayTicker || financials?.ticker}
+            </span>
+          </h2>
+          <p className="text-xs text-slate-400 mt-0.5">
+            Executive Equity & Competitor Intelligence Briefing
+          </p>
+        </div>
+
+        <button
+          onClick={handleExportPDF}
+          disabled={isExporting}
+          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold transition-all disabled:opacity-50 shadow-lg shadow-emerald-950/50 self-end sm:self-auto"
+        >
+          {isExporting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Generating PDF...</span>
+            </>
+          ) : (
+            <>
+              <Download className="h-4 w-4" />
+              <span>Export PDF Report</span>
+            </>
+          )}
+        </button>
+      </div>
+
       {/* 1. Header Financial Metrics Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 w-full">
         <div className="p-4 bg-slate-900/90 border border-slate-800 rounded-xl relative overflow-hidden">
@@ -280,7 +347,7 @@ export default function MarketDashboard({ data }: MarketDashboardProps) {
                     tickFormatter={(v) => `₹${Math.round(v)}`}
                   />
 
-                  {/* Left Axis: Traded Volume (Scales bars to the lower section) */}
+                  {/* Left Axis: Traded Volume */}
                   <YAxis 
                     yAxisId="volumeAxis"
                     domain={[0, maxVolume]} 
