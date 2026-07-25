@@ -267,14 +267,14 @@ To keep merges conflict-free, each module lives in its own file and branch no on
 
 ## Team
 
-| Module                | Team Member    | GitHub                                  | LinkedIn                                        | Responsibilities                                                                                             |
-| --------------------- | -------------- | --------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| 🧠 Core & Integration | **Avanish**    | [](https://www.google.com/search?q=%23) | [](https://www.google.com/search?q=%23)         | Repo setup, `app/page.tsx` layout, state management, PR approvals                                            |
-| 📊 Financial Agent    | **Gyanendra**  | [](https://www.google.com/search?q=%23) | [](https://www.google.com/search?q=%23)         | `lib/tools/finance-tool.ts` - stock spot price, NIFTY alpha, & 90D OHLCV series fetcher                      |
-| 📰 News Agent         | **Akshata**    | [](https://github.com/akshatabasankar)  | [](https://linkedin.com/in/akshata-basankar/)   | `lib/tools/news-tool.ts` - web search & news headline fetcher                                                |
-| 🧩 Agent Orchestrator | **Shashwat**   | [](https://github.com/shashwat230710)   | [](https://linkedin.com/in/shashwat-shukla23/)  | `app/api/market-agent/route.ts` - multi-agent API route via Vercel AI SDK & Gemini                           |
-| 🔍 Search UI          | **Mobashshir** | [](https://github.com/Mobasheera)       | [](https://linkedin.com/in/mobashshir-ahsan/)   | `components/SearchForm.tsx` - search bar, ticker shortcuts, loading states                                   |
-| 📈 Dashboard UI       | **Nikhil**     | [](https://github.com/nikzzzzzzzzzz)    | [](https://www.linkedin.com/in/nikhilkanojiya/) | `components/MarketDashboard.tsx` - metrics cards, Recharts price/volume graphs, Bull/Bear cards, risk badges |
+| Module | Team Member | GitHub | LinkedIn | Responsibilities |
+|--------|-------------|--------|----------|------------------|
+| 🧠 Core & Integration | **Avanish** | [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](#) | [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](#) | Repo setup, `app/page.tsx` layout, state management, PR approvals |
+| 📊 Financial Agent | **Gyanendra** | [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](#) | [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](#) | `lib/tools/finance-tool.ts` - stock price & valuation ratio fetcher |
+| 📰 News Agent | **Akshata** | [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/akshatabasankar) | [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://linkedin.com/in/akshata-basankar/) | `lib/tools/news-tool.ts` - web search & news headline fetcher |
+| 🧩 Agent Orchestrator | **Shashwat** | [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/shashwat230710) | [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://linkedin.com/in/shashwat-shukla23/) | `app/api/market-agent/route.ts` - multi-agent API route via Vercel AI SDK |
+| 🔍 Search UI | **Mobashshir** | [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/Mobasheera) | [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://linkedin.com/in/mobashshir-ahsan/) | `components/SearchForm.tsx` - search bar, ticker shortcuts, loading states |
+| 📈 Dashboard UI | **Nikhil** | [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/nikzzzzzzzzzz) | [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/nikhilkanojiya/) | `components/MarketDashboard.tsx` - metrics cards, Bull/Bear cards, risk badges |
 
 ---
 
