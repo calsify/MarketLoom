@@ -15,7 +15,7 @@ MarketLoom is an autonomous **Market & Competitor Intelligence Agent** that weav
 quantitative financial data together with real-time qualitative news sentiment, then has
 an LLM synthesize both into a single, structured Bull vs. Bear market briefing in seconds.
 
-[![Demo](https://img.shields.io/badge/Demo-marketloom.vercel.app-33C853?style=for-the-badge&logo=vercel&logoColor=white)](https://marketloom.vercel.app)
+[![Demo](https://img.shields.io/badge/Demo-market--loom--v2.vercel.app-33C853?style=for-the-badge&logo=vercel&logoColor=white)](https://market-loom-v2.vercel.app/)
 [![License](https://img.shields.io/badge/License-MIT-007ACC?style=for-the-badge)](./LICENSE)
 [![Built For](https://img.shields.io/badge/Built%20For-IBM%20SkillsBuild-FF4B4B?style=for-the-badge&logo=ibm&logoColor=white)](https://skillsbuild.org)
 
