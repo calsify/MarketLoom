@@ -1,6 +1,14 @@
 'use client';
 
-export default function SearchForm() {
+interface SearchFormProps {
+  onSearch: (ticker: string) => void;
+  isLoading: boolean;
+}
+
+export default function SearchForm({
+  onSearch,
+  isLoading,
+}: SearchFormProps) {
   return (
     <div>
       SearchForm
