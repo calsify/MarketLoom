@@ -257,11 +257,11 @@ To keep merges conflict-free, each module lives in its own file and branch no on
 
 - [x] Interactive price & volume charting (30D / 60D / 90D timeframes)
 - [x] NIFTY 50 Alpha & sentiment distribution barometer
+- [x] Export briefing as PDF
+- [x] Recent searches
 - [ ] Real-time price streaming
 - [ ] Portfolio-level multi-ticker analysis
 - [ ] Historical sentiment trend charts
-- [ ] Export briefing as PDF
-- [ ] Watchlists & saved searches
 
 ---
 
