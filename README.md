@@ -278,10 +278,8 @@ To keep merges conflict-free, each module lives in its own file and branch no on
 
 ---
 
-## 📜 License
+## License
 
 This project is licensed under the [MIT License](https://www.google.com/search?q=./LICENSE) - free to use for educational, research, and hackathon purposes.
 
-```
-
-```
+---
